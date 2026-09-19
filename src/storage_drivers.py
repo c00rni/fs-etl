@@ -1,0 +1,2 @@
+class FillingDownloadFailed(Exception):
+    pass
