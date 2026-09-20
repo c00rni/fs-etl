@@ -1,7 +1,8 @@
 import sys
 import os
-from src.rss import extract_rss
+import pprint
 from dotenv import load_dotenv
+import feedparser
 
 load_dotenv()
 
@@ -10,12 +11,8 @@ RSS_FEED_URL = os.getenv('RSS_FEED_URL')
 USER_EMAIL = os.getenv('USER_EMAIL')
 
 def main():
-    response = extract_rss(
-        RSS_FEED_URL,
-        USER_FULL_NAME,
-        USER_EMAIL
-    )
-    print(response)
+    d = feedparser.parse(RSS_FEED_URL, agent=f'{RSS_FEED_URL} {USER_EMAIL}')
+    pprint.pp(d)
     return 0
 
 if __name__ == '__main__':
