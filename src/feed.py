@@ -1,5 +1,6 @@
 import feedparser
 from src.model import Filling
+from datetime import datetime, date
 
 class SecFillingFeed:
 
@@ -19,7 +20,10 @@ class SecFillingFeed:
             company_name = item.get("edgar_companyname","")
             form_type = item.get("edgar_formtype","")
             link = item.get("link",""),
-            filling_date = item.get("edgar_filingdate","")
+            filling_date = datetime.strptime(
+                    item.get("edgar_filingdate", date.today().strftime("%m/%d/%Y")),
+                    "%m/%d/%Y"
+            ).date()
 
             if not cik or not link:
                 continue

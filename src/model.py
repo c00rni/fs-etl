@@ -7,4 +7,4 @@ class Filling:
     form_type: str
     company_name: str
     link: str
-    filling_date: str
+    filling_date: date
