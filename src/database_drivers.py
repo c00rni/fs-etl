@@ -24,11 +24,10 @@ class MySqlDriver(AbstractDatabasePort[T, ID]):
         self, 
         mysql_conn_id: str, 
         model_class: Type[T],
-        table_name: str
     ):
         self.hook = MySqlHook(mysql_conn_id=mysql_conn_id)
         self.model_class = model_class
-        self.table_name = table_name.lower()
+        self.table_name = self.model_class.__name__.lower()
 
     def save(self, item: T) -> None:
 

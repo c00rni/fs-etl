@@ -80,8 +80,7 @@ def insert_in_table(hook, filling):
 @pytest.fixture
 def driver(mysql_conn_id):
     return db_driver.MySqlDriver(mysql_conn_id=mysql_conn_id,
-                                 model_class=Filling,
-                                 table_name="Filling")
+                                 model_class=Filling)
 
 def test_database_driver_successful_insertion(driver, mysql_conn_id, known_filling):
     driver.save(known_filling)
