@@ -1,47 +1,64 @@
-from airflow.providers.mysql.hooks.mysql import MySqlHook
-from src.model import Filling
+from typing import TypeVar, Generic, Type, Optional
+from abc import ABC, abstractmethod
 from dataclasses import fields
+from airflow.providers.mysql.hooks.mysql import MySqlHook
 
-class MySqlDriver:
-    def __init__(self, mysql_conn_id: str):
+T = TypeVar('T')
+ID = TypeVar('ID')
+
+
+class AbstractDatabasePort(ABC, Generic[T, ID]):
+
+    @abstractmethod
+    def save(self, item: T) -> None:
+        pass
+
+    @abstractmethod
+    def find_by_id(self, primary_key_name: str, value: ID) -> Optional[T]:
+        pass
+
+
+class MySqlDriver(AbstractDatabasePort[T, ID]):
+
+    def __init__(
+        self, 
+        mysql_conn_id: str, 
+        model_class: Type[T],
+        table_name: str
+    ):
         self.hook = MySqlHook(mysql_conn_id=mysql_conn_id)
-    ''' 
-    def ensure_schema(self):
-        self.hook.run(
-            """
-            CREATE TABLE IF NOT EXISTS fillings (
-                cik          VARCHAR(20)    NOT NULL,
-                title        VARCHAR(512)   NOT NULL,
-                form_type    VARCHAR(20)    NOT NULL,
-                company_name VARCHAR(255)   NOT NULL,
-                link         VARCHAR(2048)  NOT NULL,
-                filling_date DATE           NOT NULL,
-                PRIMARY KEY (cik)
-            )
-            """,
-            autocommit=True,
-        )
-    '''
+        self.model_class = model_class
+        self.table_name = table_name.lower()
 
-    def insert(self, filling):
-        columns = [field.name for field in fields(filling)]
+    def save(self, item: T) -> None:
+
+        columns = [field.name for field in fields(item)]
 
         placeholders = ", ".join(["%s"] * len(columns))
         col_sql = ", ".join(columns)
+        values = tuple(getattr(item, name) for name in columns)
 
-        values = tuple(getattr(filling, name) for name in columns)
-
+        query = f"INSERT INTO {self.table_name} ({col_sql}) VALUES ({placeholders})"
+        
         self.hook.run(
-            f"INSERT INTO fillings ({col_sql}) VALUES ({placeholders})",
+            query,
             parameters=values,
             autocommit=True,
         )
 
-    def is_filling_known(self, filling: Filling) -> bool:
+    def find_by_id(self, primary_key_name: str, value: ID) -> Optional[T]:
 
+        query = f"SELECT * FROM {self.table_name} WHERE {primary_key_name} = %s"
+        
         rows = self.hook.get_records(
-            "SELECT 1 FROM fillings WHERE cik = %s",
-            parameters=(filling.cik,),
+            query,
+            parameters=(value,),
         )
 
-        return len(rows) > 0
+        if not rows:
+            return None
+
+        field_names = [field.name for field in fields(self.model_class)]
+        row_dict = dict(zip(field_names, rows[0]))
+
+        return self.model_class(**row_dict)

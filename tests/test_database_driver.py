@@ -36,7 +36,7 @@ def mysql_hook(mysql_conn_id):
 def ensure_schema(hook):
     hook.run(
         """
-        CREATE TABLE IF NOT EXISTS fillings (
+        CREATE TABLE IF NOT EXISTS filling (
             cik VARCHAR(20) PRIMARY KEY,
             title VARCHAR(255),
             form_type VARCHAR(20),
@@ -49,10 +49,10 @@ def ensure_schema(hook):
     )
 
 @pytest.fixture(autouse=True)
-def clean_fillings_table(mysql_hook):
+def clean_filling_table(mysql_hook):
     ensure_schema(mysql_hook)
     yield
-    mysql_hook.run("TRUNCATE TABLE fillings", autocommit=True)
+    mysql_hook.run("TRUNCATE TABLE filling", autocommit=True)
 
 @pytest.fixture
 def known_filling(known_filling_cik_number):
@@ -72,40 +72,42 @@ def insert_in_table(hook, filling):
     col_sql = ", ".join(columns)
     values = tuple(getattr(filling, name) for name in columns)
     hook.run(
-        f"INSERT INTO fillings ({col_sql}) VALUES ({placeholders})",
+        f"INSERT INTO filling ({col_sql}) VALUES ({placeholders})",
         parameters=values,
         autocommit=True,
     )
 
 @pytest.fixture
 def driver(mysql_conn_id):
-    return db_driver.MySqlDriver(mysql_conn_id=mysql_conn_id)
+    return db_driver.MySqlDriver(mysql_conn_id=mysql_conn_id,
+                                 model_class=Filling,
+                                 table_name="Filling")
 
 def test_database_driver_successful_insertion(driver, mysql_conn_id, known_filling):
-    driver.insert(known_filling)
+    driver.save(known_filling)
 
     # Verify independently — a fresh hook, raw SQL
     verifier = MySqlHook(mysql_conn_id=mysql_conn_id)
     row = verifier.get_first(
-        "SELECT cik FROM fillings WHERE cik = %s",
+        "SELECT cik FROM filling WHERE cik = %s",
         parameters=(known_filling.cik,),
     )
     assert row == (known_filling.cik,)
 
-def test_insert_raises_on_duplicate(driver, mysql_hook, mysql_conn_id, known_filling):
+def test_insert_raises_on_duplicate(driver, mysql_hook, known_filling):
     insert_in_table(mysql_hook, known_filling)
 
 
     with pytest.raises(Exception):
-        driver.insert(known_filling_in_db)
+        driver.save(known_filling)
 
 def test_is_filling_known_returns_true_when_filling_is_known(driver, mysql_hook, known_filling):
     insert_in_table(mysql_hook, known_filling)
 
-    assert driver.is_filling_known(known_filling) is True
+    assert driver.find_by_id('cik', known_filling.cik)
 
 
 def test_is_filling_known_returns_false_when_filling_unknown(driver, known_filling):
 
     unknown_filling = known_filling
-    assert driver.is_filling_known(unknown_filling) is False
+    assert driver.find_by_id('cik', unknown_filling.cik) == None
