@@ -39,7 +39,7 @@ def ensure_schema(hook):
         CREATE TABLE IF NOT EXISTS filling (
             cik VARCHAR(20) PRIMARY KEY,
             title VARCHAR(255),
-            form_type VARCHAR(20),
+            form_type VARCHAR(255),
             company_name VARCHAR(255),
             link VARCHAR(500),
             filling_date DATE
@@ -109,4 +109,4 @@ def test_is_filling_known_returns_true_when_filling_is_known(driver, mysql_hook,
 def test_is_filling_known_returns_false_when_filling_unknown(driver, known_filling):
 
     unknown_filling = known_filling
-    assert driver.find_by_id('cik', unknown_filling.cik) == None
+    assert driver.find_by_id('cik', unknown_filling.cik) == False

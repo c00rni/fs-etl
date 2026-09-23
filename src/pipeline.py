@@ -9,7 +9,8 @@ def sec_filling_download_pipeline(database_driver: AbstractDatabasePort,
 
     for filling in sec_fillings.get_fillings():
 
-       if not database_driver.find_by_id('cik', filling.cik):
+        exist = database_driver.find_by_id('cik', filling.cik)
+        if not exist:
             try:
 
                 file_stream = http_client_adapter.download(url=filling.link)

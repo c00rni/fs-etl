@@ -55,11 +55,11 @@ def test_download_only_unknow_sec_filling(unknown_filling_cik_number,
         def __init__(self, known_fillings: list):
             self._known_fillings = known_fillings
 
-        def find_by_id(self, primary_key_name: str, value):
+        def find_by_id(self, primary_key_name: str, value) -> bool:
             for filling in self._known_fillings:
                 if filling.cik == value:
-                    return {'cik': value}
-            return None
+                    return True
+            return False
 
         def save(self, item):
             self._known_fillings.append(item)
@@ -97,7 +97,7 @@ def test_download_only_unknow_sec_filling(unknown_filling_cik_number,
     sec_filling_download_pipeline(fake_database, fake_storage, fake_source, fake_http_client)
 
     assert fake_storage.exists(f"{unknown_filling_cik_number}.zip") == True
-    assert fake_database.find_by_id('cik', unknown_filling_cik_number)
+    assert fake_database.find_by_id('cik', unknown_filling_cik_number) == True
 
 def test_filling_stay_unknown_when_write_fail(unknown_filling_cik_number,
                                                  known_filling_cik_number,
@@ -112,8 +112,8 @@ def test_filling_stay_unknown_when_write_fail(unknown_filling_cik_number,
         def find_by_id(self, primary_key_name: str, value):
             for filling in self._known_fillings:
                 if filling.cik == value:
-                    return {'cik': value}
-            return None
+                    return True
+            return False
 
         def save(self, item):
             self._known_fillings.append(item)
@@ -150,7 +150,7 @@ def test_filling_stay_unknown_when_write_fail(unknown_filling_cik_number,
     sec_filling_download_pipeline(fake_database, fake_storage, fake_source, fake_http_client)
 
     assert fake_storage.exists(f"{unknown_filling_cik_number}.zip") == False
-    assert fake_database.find_by_id('cik',unknown_filling_cik_number) == None
+    assert fake_database.find_by_id('cik',unknown_filling_cik_number) == False
 
 def test_execution_continue_when_insertion_fail(unknown_filling_cik_number,
                                                  known_filling_cik_number,
@@ -162,11 +162,11 @@ def test_execution_continue_when_insertion_fail(unknown_filling_cik_number,
         def __init__(self, known_fillings: list):
             self._known_fillings = known_fillings
 
-        def find_by_id(self, primary_key_name: str, value):
+        def find_by_id(self, primary_key_name: str, value) -> bool:
             for filling in self._known_fillings:
                 if filling.cik == value:
-                    return {'cik': value}
-            return None
+                    return True
+            return False
 
         def save(self, item):
             raise Exception()
@@ -203,4 +203,4 @@ def test_execution_continue_when_insertion_fail(unknown_filling_cik_number,
     sec_filling_download_pipeline(fake_database, fake_storage, fake_source, fake_http_client)
 
     assert fake_storage.exists(f"{unknown_filling_cik_number}.zip") == True
-    assert fake_database.find_by_id('cik', unknown_filling_cik_number) == None
+    assert fake_database.find_by_id('cik', unknown_filling_cik_number) == False
