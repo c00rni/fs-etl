@@ -219,5 +219,13 @@ __marimo__/
 # Streamlit
 .streamlit/secrets.toml
 
+# Airflow 
+airflow.cfg
+airflow.db
+airflow.db-shm
+airflow.db-wal
+logs/
+simple_auth_manager_passwords.json.generated
+
 # personal
 tmp/
