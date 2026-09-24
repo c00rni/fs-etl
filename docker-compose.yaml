@@ -1,0 +1,58 @@
+services:
+  mysql:
+    image: mysql:${MYSQL_VERSION}
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    ports:
+      - "3306:3306"
+    volumes:
+      - ${DB_FOLDER}:/var/lib/mysql
+      - ./init-db:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "mysqladmin",
+          "ping",
+          "-h",
+          "localhost",
+          "-p${MYSQL_ROOT_PASSWORD}",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  airflow:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      # Metadata DB connection (Postgres/MySQL preferred over SQLite in containers)
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: mysql+mysqldb://${MYSQL_USER}:${MYSQL_PASSWORD}@mysql:3306/${MYSQL_DATABASE}
+      AIRFLOW__CORE__DAGS_FOLDER: /opt/airflow/dags
+      AIRFLOW_CONN_MY_LOCAL_MYSQL: mysqldb://${MYSQL_USER}:${MYSQL_PASSWORD}@mysql:3306/${MYSQL_DATABASE}
+      AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "False"
+
+      #Airflow variables
+      AIRFLOW_VAR_USER_FULL_NAME: ${AIRFLOW_VAR_USER_FULL_NAME}
+      AIRFLOW_VAR_USER_EMAIL: ${AIRFLOW_VAR_USER_EMAIL}
+      AIRFLOW_VAR_RSS_FEED_URL: ${AIRFLOW_VAR_RSS_FEED_URL}
+      AIRFLOW_VAR_STAGING_DIR: ${AIRFLOW_VAR_STAGING_DIR}
+
+      AIRFLOW__CORE__FERNET_KEY: ${AIRFLOW__CORE__FERNET_KEY}
+    volumes:
+      - ./dags:/opt/airflow/dags:ro
+      - ${DATA_FOLDER}:${AIRFLOW_VAR_STAGING_DIR}
+    user: "${AIRFLOW_UID:-50000}:0"
+    command: >
+      bash -c "
+        airflow db migrate &&
+        airflow standalone
+      "
