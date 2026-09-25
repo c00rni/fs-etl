@@ -3,8 +3,8 @@
 A proof-of-concept ETL pipeline that ingests SEC filings disclosures into a
 medallion-style data architecture using Apache Airflow.
 
-The pipeline runs on a 10-minute schedule, discovers new filings via the SEC
-RSS feed, downloads the associated XBRL ZIP archives, and persists filing
+The pipeline runs  a batch process on a 10-minute schedule, discovers new filings via the SEC
+RSS feed, downloads the associated ZIP archives, and persists filing
 metadata into MySQL for downstream analysis.
 
 ---
@@ -18,7 +18,7 @@ The project follows a **hexagonal (ports & adapters)** architecture with a
 
 | Layer      | Storage                  | Content                              |
 |------------|--------------------------|--------------------------------------|
-| **Bronze** | `$DATA_FOLDER/*.zip`     | Raw XBRL archives downloaded from SEC |
+| **Bronze** | `$DATA_FOLDER/*.zip`     | Raw archives downloaded from SEC |
 | **Silver** | MySQL `filling` table    | Parsed filing metadata               |
 | **Gold**   | *(planned)*              | Aggregated / analytical views        |
 
@@ -32,7 +32,6 @@ The project follows a **hexagonal (ports & adapters)** architecture with a
 
 - Docker ≥ 24
 - Docker Compose ≥ 2.20
-- `make` (optional, for shortcuts)
 - An SEC-compliant `User-Agent` (SEC requires a real name + email)
 
 ---
