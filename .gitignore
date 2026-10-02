@@ -229,3 +229,14 @@ simple_auth_manager_passwords.json.generated
 
 # personal
 tmp/
+
+# Local .terraform directories
+**/.terraform/*
+
+# State files
+*.tfstate
+*.tfstate.*
+
+# Crash logs
+crash.log
+crash.*
